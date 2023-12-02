@@ -1,6 +1,9 @@
 use super::super::read_file;
 use std::cmp::Ordering;
 
+const DIGITS: [(&'static str, u32); 9] = [("1", 1), ("2", 2), ("3", 3), ("4", 4), ("5", 5), ("6", 6), ("7", 7), ("8", 8), ("9", 9)];
+const NUMBERS: [(&'static str, u32); 9] = [("one", 1), ("two", 2), ("three", 3), ("four", 4), ("five", 5), ("six", 6), ("seven", 7), ("eight", 8), ("nine", 9)];
+
 pub fn run() {
     // read file to string
     let input = read_file(1).expect("Couldn't read file");
@@ -11,8 +14,8 @@ pub fn run() {
 
 #[derive(Copy, Clone, Debug, Eq)]
 struct NumberWithPosition {
-    number: Option<usize>,
-    index: Option<usize>,
+    number: u32,
+    index: usize,
 }
 
 impl PartialEq for NumberWithPosition {
@@ -24,14 +27,7 @@ impl PartialEq for NumberWithPosition {
 
 impl PartialOrd for NumberWithPosition {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self.index.as_ref(), other.index.as_ref()) {
-            (Some(self_index), Some(other_index)) => Some(self_index.cmp(other_index)),
-            // (Some(_), None) => Some(Ordering::Greater),
-            // (None, Some(_)) => Some(Ordering::Less),
-            (Some(_), None) => None,
-            (None, Some(_)) => None,
-            (None, None) => Some(Ordering::Equal),
-        }
+        Some(self.index.cmp(&other.index))
     }
 }
 
@@ -42,117 +38,58 @@ impl Ord for NumberWithPosition {
 }
 
 
-
-fn calculate_part1(input: String) -> usize {
-
+fn calculate_part1(input: String) -> u32 {
     let mut sum = 0;
-
-    let mut lines = input.lines();
-    while let Some(line) = lines.next() {
-        let (first, last) = get_digits(line);
-        sum += first.number.unwrap_or_else(|| 0) * 10 + last.number.unwrap_or_else(|| 0);
+    for line in input.lines() {
+        if let Some((first, last)) = get_written_numbers(line, &DIGITS) {
+            sum += first.number * 10 + last.number;
+        } else {
+            panic!("not digits returend for line: \n{line}");
+        }
     }
     sum
 }
 
-fn calculate_part2(input: String) -> usize {
-
+fn calculate_part2(input: String) -> u32 {
     let mut sum = 0;
-
-    let mut lines = input.lines();
-    while let Some(line) = lines.next() {
-        let mut line_results = Vec::new();
-
-        let (first_digit, last_digit) = get_digits(line);
-        let (first_written, last_written) = get_written_numbers(line);
-
-
-        if first_digit.number.is_some() { line_results.push(first_digit); }
-        if last_digit.number.is_some() { line_results.push(last_digit); }
-        if first_written.number.is_some() { line_results.push(first_written); }
-        if last_written.number.is_some() { line_results.push(last_written); }
-
-        let first = line_results.iter().min().unwrap();
-        let last = line_results.iter().max().unwrap();
-
-        sum += first.number.unwrap()*10 + last.number.unwrap();  // we know here, that first and last have Some(number)
-
-    }
-    sum
-}
-
-
-
-fn get_digits(line: &str) -> (NumberWithPosition, NumberWithPosition) {
-    let mut first = NumberWithPosition{number: None, index: None};
-    let mut last = NumberWithPosition{number: None, index: None};
     
-    let mut position_counter = 0;
-    for c in line.chars() {
-        if let Some(digit) = c.to_digit(10) {
-            let found = NumberWithPosition {number: Some(usize::try_from(digit).unwrap()), index: Some(position_counter)};
+    for line in input.lines() {
+        let mut nums = get_written_numbers(line, &DIGITS);
+        if let Some((first_written, last_written)) = get_written_numbers(line, &NUMBERS) {
+            nums = match nums {
+                Some((first, last)) => Some((first.min(first_written), last.max(last_written))),
+                None => Some((first_written, last_written))
+            };
+        }
+        if let Some((first, last)) = nums {
+            sum += first.number *10 + last.number;
+            
+        } else {
+            panic!("No digit nor written number in line: \n{line}")
+        }
 
-            if first.number.is_none() {
-                first = found;
-            }
+    }
+    sum
+}
 
-            if last.number.is_none() {
-                last = found;
-            }
 
-            if found < first {
-                first = found;
-            }
-            if found > last {
-                last = found;
+fn get_written_numbers(line: &str, numbers: &[(&str, u32)]) -> Option<(NumberWithPosition, NumberWithPosition)> {
+    let mut nums = None;
+    for num in numbers {
+        for f in [str::find, str::rfind] {
+            if let Some(index) = f(line, num.0){
+                let found = NumberWithPosition {number: num.1, index };
+                nums = match nums {
+                    None => Some((found, found)),
+                    Some((first, last)) => Some((first.min(found), last.max(found)))
+                };
+            } else {
+                break;
             }
         }
-        position_counter += 1;
     }
-
-
-    (first, last)
-        
+    nums
 }
-
-
-fn get_written_numbers(line: &str) -> (NumberWithPosition, NumberWithPosition) {
-
-    let written_numbers = vec![("zero", 0), ("one", 1), ("two", 2), ("three", 3), ("four", 4), ("five", 5), ("six", 6), ("seven", 7), ("eight", 8), ("nine", 9)];
-
-    let mut first = NumberWithPosition { number: None, index: None }; 
-    let mut last = NumberWithPosition { number: None, index: None };
-
-    for written_number in written_numbers.clone() {
-        if let Some(found_at_index) = line.find(written_number.0){
-            // println!("searching number: {}, found at index: {}", written_number.0, found_at_index);
-           
-            let found = NumberWithPosition {number: Some(written_number.1), index: Some(found_at_index) };
-
-            if first.number.is_none() {
-                first = found;
-            }
-
-            if last.number.is_none() {
-                last = found;
-            }
-
-            if found < first {
-                first = found;
-            }
-
-            if found > last {
-                last = found;
-            }
-
-        } 
-    }
-
-
-    (first, last)
-
-}
-
 
 
 
