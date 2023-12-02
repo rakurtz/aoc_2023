@@ -8,8 +8,9 @@ pub fn run() {
     // read file to string
     let input = read_file(1).expect("Couldn't read file");
   
-    println!("Day 1, part 1 - {}", calculate_part1(input.clone()));
-    println!("Day 1, part 2 - {}", calculate_part2(input.clone()));
+    println!("Day 1, part 1 - {}", calculate(&input, &[&DIGITS]));
+    println!("Day 1, part 2 - {}", calculate(&input, &[&DIGITS, &NUMBERS]));
+
 }
 
 #[derive(Copy, Clone, Debug, Eq)]
@@ -37,33 +38,21 @@ impl Ord for NumberWithPosition {
     }
 }
 
-
-fn calculate_part1(input: String) -> u32 {
-    let mut sum = 0;
-    for line in input.lines() {
-        if let Some((first, last)) = get_written_numbers(line, &DIGITS) {
-            sum += first.number * 10 + last.number;
-        } else {
-            panic!("not digits returend for line: \n{line}");
-        }
-    }
-    sum
-}
-
-fn calculate_part2(input: String) -> u32 {
+fn calculate(input: &str, numbers: &[&[(&'static str, u32)]]) -> u32 {
     let mut sum = 0;
     
     for line in input.lines() {
-        let mut nums = get_written_numbers(line, &DIGITS);
-        if let Some((first_written, last_written)) = get_written_numbers(line, &NUMBERS) {
-            nums = match nums {
-                Some((first, last)) => Some((first.min(first_written), last.max(last_written))),
-                None => Some((first_written, last_written))
-            };
+        let mut nums: Option<(NumberWithPosition, NumberWithPosition)> = None;
+        for n in numbers {
+            if let Some((first_written, last_written)) = get_written_numbers(line, n) {
+                nums = match nums {
+                    Some((first, last)) => Some((first.min(first_written), last.max(last_written))),
+                    None => Some((first_written, last_written))
+                };
+            }
         }
         if let Some((first, last)) = nums {
             sum += first.number *10 + last.number;
-            
         } else {
             panic!("No digit nor written number in line: \n{line}")
         }
@@ -102,10 +91,9 @@ mod tests {
         let input = "1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
-treb7uchet"
-            .to_string();
+treb7uchet";
        
-        assert_eq!(142, calculate_part1(input));
+        assert_eq!(142, calculate(input, &[&DIGITS]));
     }
 
     #[test]
@@ -116,17 +104,9 @@ abcone2threexyz
 xtwone3four
 4nineeightseven2
 zoneight234
-7pqrstsixteen"
-            .to_string();
-
-let input_oneliner = "two1nine".to_string();
-
-        // assert_eq!(Some(4), input_oneliner.find("nine"));
-       
-        assert_eq!(281, calculate_part2(input));
+7pqrstsixteen";
+        assert_eq!(281, calculate(input, &[&DIGITS, &NUMBERS]));
     }
-
-   
 }
 
 
