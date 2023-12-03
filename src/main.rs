@@ -10,7 +10,8 @@ fn main() {
     if let Some(day) = args.get(1) {
         match day.parse::<usize>() {
             Ok(1) => aoc_2023::solutions::day1::run(),
-           
+            Ok(2) => aoc_2023::solutions::day2::run(),
+
             _ => println!("{}", USAGE),
         }
     } else {
