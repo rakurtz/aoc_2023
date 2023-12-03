@@ -1,4 +1,5 @@
 use super::super::read_file;
+use regex::Regex;
 
 pub fn run() {
     // read file to string
@@ -11,7 +12,7 @@ pub fn run() {
         blue: 14,
     };
 
-    let games = Games::new_from_input(&input);
+    let games = Games::new_from_input_regex_parser(&input);
     println!("Day 2, part 1 - {}", games.sum_possible_game_ids(&bag_part_1));
     println!("Day 2, part 2 - {}", games.sum_of_powers_of_minumum_bags());
 }
@@ -22,7 +23,7 @@ struct Games {
 }
 
 impl Games {
-    fn new_from_input(input: &str) -> Self {
+    fn new_from_input_split_parser(input: &str) -> Self {
         let mut games = vec![];
         for line in input.lines() {
             games.push(Game::new_from_str(line));
@@ -30,6 +31,47 @@ impl Games {
         Games { games }
     }
 
+    fn new_from_input_regex_parser(input: &str) -> Self {
+        let mut games = vec![];
+        let re_id = Regex::new(r"(?<id>\d+):").unwrap();
+        let re_sets = Regex::new(r"(?<amount>\d+)\s+(?<color>\w+)(?:[,]|$)").unwrap();
+        
+        for line in input.lines() {
+            let mut id = None;
+            let mut sets: Vec<GameSet> = vec![];
+
+            // game number
+            if let Some(captures) = re_id.captures(line) {
+                let (_, [captured_id]) = captures.extract();
+                id = Some(captured_id.parse::<u32>().unwrap()); 
+            } 
+    
+            // sets
+            for set in line.split(';') {
+                let mut game_set = GameSet::new_empty();
+
+                for (_, [amount, color]) in re_sets.captures_iter(set).map(|c| c.extract())  {
+                    match color {
+                        "red" => {game_set.red = amount.parse::<u32>().unwrap(); },
+                        "green" => { game_set.green = amount.parse::<u32>().unwrap(); },
+                        "blue" => { game_set.blue = amount.parse::<u32>().unwrap(); },
+                        _ => panic!("not a color")
+                    }    
+                
+
+            }
+
+            sets.push(game_set);
+            }
+            if let Some(id) = id {
+                games.push(Game { id , sets})
+            }
+        }
+        Games {
+            games
+        }
+    }
+ 
     fn sum_possible_game_ids(&self, bag: &GameSet) -> u32 {
         let mut sum_ids = 0;
         for game in &self.games {
@@ -76,6 +118,7 @@ impl Game {
 
         Game { id, sets }
     }
+
 
     fn possible_for_bag(&self, bag: &GameSet) -> bool {
         for set in &self.sets {
@@ -168,7 +211,7 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
             blue: 14,
         };
 
-        let games = Games::new_from_input(input);
+        let games = Games::new_from_input_split_parser(input);
 
         // internal
         assert_eq!(5, games.games.len());
@@ -179,4 +222,34 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
         // part 2
         assert_eq!(2286, games.sum_of_powers_of_minumum_bags());
     }
+
+    #[test]
+    fn day_2_regex_patterns() {
+        let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
+        let oneliner = "Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red";
+
+        let bag = GameSet {
+            red: 12,
+            green: 13,
+            blue: 14,
+        };
+
+        let games = Games::new_from_input_regex_parser(input);
+
+        // internal
+        assert_eq!(5, games.games.len());
+
+        // part 1
+        assert_eq!(8, games.sum_possible_game_ids(&bag));
+
+        // part 2
+        assert_eq!(2286, games.sum_of_powers_of_minumum_bags());
+            
+    
+    }
+
 }
