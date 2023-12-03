@@ -28,50 +28,48 @@ struct PotentialGear {
 
 struct Map {
     map: String,
-    numbers: Vec<Number>,
+    potential_parts: Vec<Number>,
     potential_gears: Vec<PotentialGear>,
 }
 
 impl Map {
     fn new(input: String) -> Self {
-        let numbers = vec![];
+        let potential_parts = vec![];
         let potential_gears = vec![];
         let mut map = Map {
             map: input,
-            numbers,
+            potential_parts,
             potential_gears,
         };
 
         // calculations:
-        map.find_numbers();
+        map.find_potential_parts();
         map.part_sum();
         map.find_potential_gears();
 
         map
     }
 
-    fn find_numbers(&mut self) {
+    fn find_potential_parts(&mut self) {
         let re = Regex::new(r"(\d+)").unwrap();
 
         for (row, line) in self.map.lines().enumerate() {
-            for captures in re.captures_iter(line).map(|c| c) {
-                if let Some(capture) = captures.iter().next() {
-                    if let Some(capture) = capture {
-                        let start = capture.start();
-                        let end = capture.end();
-                        self.numbers.push(Number {
-                            value: capture.as_str().parse::<u32>().unwrap(),
-                            row,
-                            start,
-                            end,
-                        });
-                    }
+            for captures in re.captures_iter(line) {
+                if let Some(Some(capture)) = captures.iter().next() {
+                    let start = capture.start();
+                    let end = capture.end();
+                    self.potential_parts.push(Number {
+                        value: capture.as_str().parse::<u32>().unwrap(),
+                        row,
+                        start,
+                        end,
+                    });
                 }
             }
         }
     }
 
-    fn is_part_number(&self, number: &Number) -> bool {
+    fn is_part(&self, number: &Number) -> bool {
         let take_lines;
         let skip_rows;
 
@@ -94,13 +92,12 @@ impl Map {
             skip_characters = number.start - 1;
         };
 
-        let mut line_iter = self.map.lines().skip(skip_rows).take(take_lines);
+        let line_iter = self.map.lines().skip(skip_rows).take(take_lines);
 
-        while let Some(line) = line_iter.next() {
-            let mut surrounding_characters = line.chars().skip(skip_characters).take(take_characters);
-            
-            while let Some(c) = surrounding_characters.next() {
-                if !c.is_digit(10) && c != '.' {
+        for line in line_iter {
+            let surrounding_characters = line.chars().skip(skip_characters).take(take_characters);
+            for c in surrounding_characters {
+                if !c.is_ascii_digit() && c != '.' {
                     return true;
                 }
             }
@@ -112,8 +109,8 @@ impl Map {
     fn part_sum(&self) -> u32 {
         let mut sum = 0;
 
-        for number in &self.numbers {
-            if self.is_part_number(number) {
+        for number in &self.potential_parts {
+            if self.is_part(number) {
                 sum += number.value;
             }
         }
@@ -125,17 +122,14 @@ impl Map {
         let re = Regex::new(r"(\*)").unwrap();
         
         for (row, line) in self.map.lines().enumerate() {
-            for captures in re.captures_iter(line).map(|c| c) {
-                if let Some(capture) = captures.iter().next() {
-                    if let Some(capture) = capture {
-                        let position = capture.start();
-                        let end = capture.end();
-                        self.potential_gears.push(PotentialGear { 
-                            row,
-                            position,
-                
-                        });
-                    }
+            for captures in re.captures_iter(line) { 
+                if let Some(Some(capture)) = captures.iter().next() {
+                    let position = capture.start();
+                    self.potential_gears.push(PotentialGear { 
+                        row,
+                        position,
+                    });
+                    
                 }
             }
         }
@@ -145,7 +139,7 @@ impl Map {
     fn is_gear(&self, gear: &PotentialGear) -> Option<Vec<&Number>> {
         let mut connected_gears = vec![];
         
-        for number in &self.numbers {
+        for number in &self.potential_parts {
             
             if (gear.row > 0 && gear.row - 1 == number.row) 
                 || gear.row == number.row
@@ -181,7 +175,7 @@ impl Map {
         let mut sum = 0;
 
         for gear in &self.potential_gears {
-            if let Some(gear_numbers) = self.is_gear(&gear) {
+            if let Some(gear_numbers) = self.is_gear(gear) {
                 let ratio = gear_numbers[0].value * gear_numbers[1].value;  // safe because is_gear will alway return Option<Vec<Number>> with 2 Numbers!
                 sum += ratio;
             }
