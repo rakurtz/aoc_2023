@@ -11,6 +11,7 @@ fn main() {
         match day.parse::<usize>() {
             Ok(1) => aoc_2023::solutions::day1::run(),
             Ok(2) => aoc_2023::solutions::day2::run(),
+            Ok(3) => aoc_2023::solutions::day3::run(),
 
             _ => println!("{}", USAGE),
         }

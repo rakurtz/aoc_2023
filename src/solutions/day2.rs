@@ -13,7 +13,10 @@ pub fn run() {
     };
 
     let games = Games::new_from_input_regex_parser(&input);
-    println!("Day 2, part 1 - {}", games.sum_possible_game_ids(&bag_part_1));
+    println!(
+        "Day 2, part 1 - {}",
+        games.sum_possible_game_ids(&bag_part_1)
+    );
     println!("Day 2, part 2 - {}", games.sum_of_powers_of_minumum_bags());
 }
 
@@ -35,7 +38,7 @@ impl Games {
         let mut games = vec![];
         let re_id = Regex::new(r"(?<id>\d+):").unwrap();
         let re_sets = Regex::new(r"(?<amount>\d+)\s+(?<color>\w+)(?:[,]|$)").unwrap();
-        
+
         for line in input.lines() {
             let mut id = None;
             let mut sets: Vec<GameSet> = vec![];
@@ -43,35 +46,37 @@ impl Games {
             // game number
             if let Some(captures) = re_id.captures(line) {
                 let (_, [captured_id]) = captures.extract();
-                id = Some(captured_id.parse::<u32>().unwrap()); 
-            } 
-    
+                id = Some(captured_id.parse::<u32>().unwrap());
+            }
+
             // sets
             for set in line.split(';') {
                 let mut game_set = GameSet::new_empty();
 
-                for (_, [amount, color]) in re_sets.captures_iter(set).map(|c| c.extract())  {
+                for (_, [amount, color]) in re_sets.captures_iter(set).map(|c| c.extract()) {
                     match color {
-                        "red" => {game_set.red = amount.parse::<u32>().unwrap(); },
-                        "green" => { game_set.green = amount.parse::<u32>().unwrap(); },
-                        "blue" => { game_set.blue = amount.parse::<u32>().unwrap(); },
-                        _ => panic!("not a color")
-                    }    
-                
+                        "red" => {
+                            game_set.red = amount.parse::<u32>().unwrap();
+                        }
+                        "green" => {
+                            game_set.green = amount.parse::<u32>().unwrap();
+                        }
+                        "blue" => {
+                            game_set.blue = amount.parse::<u32>().unwrap();
+                        }
+                        _ => panic!("not a color"),
+                    }
+                }
 
-            }
-
-            sets.push(game_set);
+                sets.push(game_set);
             }
             if let Some(id) = id {
-                games.push(Game { id , sets})
+                games.push(Game { id, sets })
             }
         }
-        Games {
-            games
-        }
+        Games { games }
     }
- 
+
     fn sum_possible_game_ids(&self, bag: &GameSet) -> u32 {
         let mut sum_ids = 0;
         for game in &self.games {
@@ -110,7 +115,7 @@ impl Game {
             .unwrap()
             .parse::<u32>()
             .unwrap();
-        
+
         let line_iter_sets = values.next().unwrap().split(';');
         for set in line_iter_sets {
             sets.push(GameSet::new_from_str(set.trim()));
@@ -118,7 +123,6 @@ impl Game {
 
         Game { id, sets }
     }
-
 
     fn possible_for_bag(&self, bag: &GameSet) -> bool {
         for set in &self.sets {
@@ -157,7 +161,7 @@ impl GameSet {
             let mut amount_color = amount_color.trim().split(' ');
             let amount = amount_color.next().unwrap();
             let color = amount_color.next().unwrap();
-            
+
             match color {
                 "red" => red = amount.parse::<u32>().unwrap(),
                 "green" => green = amount.parse::<u32>().unwrap(),
@@ -248,8 +252,5 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
 
         // part 2
         assert_eq!(2286, games.sum_of_powers_of_minumum_bags());
-            
-    
     }
-
 }
