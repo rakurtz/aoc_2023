@@ -1,5 +1,3 @@
-use std::vec;
-
 use super::super::read_file;
 use regex::Regex;
 
@@ -11,11 +9,8 @@ pub fn run() {
 
     // let result_pt1 = calculate_p1(&input);
 
-    let mut pile = Pile::new(input.lines().count());
-    for line in input.lines() {
-        pile.parse_card(line);
-    }
-    
+    let pile = Pile::new(&input);
+       
     let result_pt1 = pile.points_in_game();
     let result_pt2 = pile.cards_in_game();
     
@@ -50,13 +45,43 @@ struct Pile {
 }
 
 impl Pile {
-    fn new(size: usize) -> Self {
+    pub fn new(input: &str) -> Self {
+
         let mut pile = vec![];
-        for n in 1..size+1 {
+        for n in 1..input.lines().count()+1 {
             pile.push(Card::new(n))
         }
-        Pile { pile }
+        
+        let mut pile = Pile { pile };
+        
+        for line in input.lines() {
+            pile.parse_card(line);
+        }
+
+        pile
     }
+
+    pub fn points_in_game(&self) -> u32 {
+        let mut points = 0;
+
+        for card in &self.pile {
+            if card.matching > 0 {
+                points += 2u32.pow(card.matching - 1)
+            }
+        }
+
+        points
+    }
+
+    pub fn cards_in_game(&self) -> usize {
+        let mut total = 0;
+        for card in &self.pile {
+            total += card.copies;
+        }
+        total
+    }
+
+    // internal methods following 
 
     fn add_copies_to_next_cards(&mut self, id: usize, matching_numbers: u32, ) {
         if let Some(card) = self.get_card(id) {
@@ -113,26 +138,6 @@ impl Pile {
 
     }
 
-    fn points_in_game(&self) -> u32 {
-        let mut points = 0;
-
-        for card in &self.pile {
-            if card.matching > 0 {
-                points += 2u32.pow(card.matching - 1)
-            }
-        }
-
-        points
-    }
-
-    fn cards_in_game(&self) -> usize {
-        let mut total = 0;
-        for card in &self.pile {
-            total += card.copies;
-        }
-        total
-    }
-
 
     //
     // not really a method on Pile. Should this be organized differently?
@@ -148,6 +153,7 @@ impl Pile {
         }
         numbers
     }
+
 
 }
 
@@ -173,15 +179,9 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
         // part 1
         
         // part 2
-        let mut pile = Pile::new(input.lines().count());
+        let pile = Pile::new(input);
         
         assert_eq!(13, pile.points_in_game());
-        
-        for line in input.lines() {
-            pile.parse_card(line);
-        }
-
-
         assert_eq!(30, pile.cards_in_game());
     }
 }
