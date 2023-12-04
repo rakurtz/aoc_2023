@@ -9,57 +9,153 @@ pub fn run() {
     // read file to string
     let input = read_file(DAY).expect("Couldn't read file");
 
-    let result_pt1 = calculate_p1(&input);
-    let result_pt2 = "";
+    // let result_pt1 = calculate_p1(&input);
+
+    let mut pile = Pile::new(input.lines().count());
+    for line in input.lines() {
+        pile.parse_card(line);
+    }
+    
+    let result_pt1 = pile.points_in_game();
+    let result_pt2 = pile.cards_in_game();
+    
     println!("Day {}, part 1: {}", DAY, result_pt1);
     println!("Day {}, part 2: {}", DAY, result_pt2);
 }
 
-fn calculate_p1(input: &str) -> u32 {
-    let mut sum = 0;
-
-    for line in input.lines() {
-        sum += parse_line(line);
-    }
-
-    sum
+#[derive(Debug)]
+struct Card {
+    id: usize,
+    matching: u32,
+    copies: usize,
 }
 
-fn parse_line(line: &str) -> u32 {
-    let mut card_points = 0;
-    let mut line = line.split(':');
-
-    // seperate winning nummbers from owner's numbers and skip "Card" part of the line
-    let mut seperated_numbers = line.nth(1).unwrap().split('|');
-
-
-    let winning = extract_numbers(seperated_numbers.next().unwrap());
-    let owned = extract_numbers(seperated_numbers.next().unwrap());
-
-    for n in owned {
-        if winning.contains(&n) {
-            card_points += 1;
+impl Card {
+    fn new(id: usize) -> Self {
+        Card {
+            id,
+            matching: 0,
+            copies: 1,
         }
     }
 
-    if card_points > 0 {
-        2u32.pow(card_points - 1)
-    } else {
-        0
+    fn add_copies(&mut self, copies: usize) {
+        self.copies += copies;
     }
 }
 
-fn extract_numbers(haystack: &str) -> Vec<u32> {
-    let re = Regex::new(r"(\d+)").unwrap();
-    let mut numbers = vec![];
+#[derive(Debug)]
+struct Pile {
+    pile: Vec<Card>,
+}
 
-    for captures in re.captures_iter(haystack) {
-        if let Some(Some(capture)) = captures.iter().next() {
-            numbers.push(capture.as_str().parse::<u32>().unwrap());
+impl Pile {
+    fn new(size: usize) -> Self {
+        let mut pile = vec![];
+        for n in 1..size+1 {
+            pile.push(Card::new(n))
+        }
+        Pile { pile }
+    }
+
+    fn add_copies_to_next_cards(&mut self, id: usize, matching_numbers: u32, ) {
+        if let Some(card) = self.get_card(id) {
+            let copies = card.copies;
+            
+            for n in id..(id+matching_numbers as usize) {
+                if let Some(next_card) = self.get_card(n+1) {
+                    next_card.add_copies(copies);
+                }
+            }
         }
     }
-    numbers
+
+    fn get_card(&mut self, id: usize) -> Option<&mut Card> {
+        
+        self.pile.iter_mut().find(|card| card.id == id)
+        
+        //// Clippy suggested to use the above instead of:
+        //
+        // for card in &mut self.pile {
+        //     if card.id == id {
+        //         return Some(card);
+        //     } 
+        // }
+        // None
+    }
+     
+
+    fn parse_card(&mut self, line: &str) {
+        let mut line = line.split(':');
+
+        let id = line.next()
+                    .unwrap()
+                    .split(' ')
+                    .last()         // number is the last
+                    .unwrap()
+                    .parse::<usize>()
+                    .unwrap();
+                
+        // seperate winning nummbers from owner's numbers
+        let mut seperated_numbers = line.next().unwrap().split('|');
+    
+        let winning = Pile::extract_numbers(seperated_numbers.next().unwrap());
+        let owned = Pile::extract_numbers(seperated_numbers.next().unwrap());
+    
+        let mut matching = 0;
+        for n in owned {
+            if winning.contains(&n) {
+                matching += 1;
+            }
+        }
+        self.get_card(id).unwrap().matching = matching;
+        self.add_copies_to_next_cards(id, matching);
+
+    }
+
+    fn points_in_game(&self) -> u32 {
+        let mut points = 0;
+
+        for card in &self.pile {
+            if card.matching > 0 {
+                points += 2u32.pow(card.matching - 1)
+            }
+        }
+
+        points
+    }
+
+    fn cards_in_game(&self) -> usize {
+        let mut total = 0;
+        for card in &self.pile {
+            total += card.copies;
+        }
+        total
+    }
+
+
+    //
+    // not really a method on Pile. Should this be organized differently?
+    //
+    fn extract_numbers(haystack: &str) -> Vec<u32> {
+        let re = Regex::new(r"(\d+)").unwrap();
+        let mut numbers = vec![];
+    
+        for captures in re.captures_iter(haystack) {
+            if let Some(Some(capture)) = captures.iter().next() {
+                numbers.push(capture.as_str().parse::<u32>().unwrap());
+            }
+        }
+        numbers
+    }
+
 }
+
+
+
+
+
+
 
 #[cfg(test)]
 mod tests {
@@ -78,6 +174,13 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
         assert_eq!(13, calculate_p1(input));
 
         // part 2
-        assert_eq!(0, 0);
+        let mut pile = Pile::new(input.lines().count());
+
+        for line in input.lines() {
+            pile.parse_card(line);
+        }
+
+
+        assert_eq!(30, pile.cards_in_game());
     }
 }
