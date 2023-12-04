@@ -1,6 +1,5 @@
-use regex::Regex;
-
 use super::super::read_file;
+use regex::Regex;
 
 pub fn run() {
     // read file to string
@@ -9,7 +8,6 @@ pub fn run() {
 
     println!("Day 3, part 1 {}", map.part_sum());
     println!("Day 3, part 2 {}", map.sum_gear_ratio());
-
 }
 
 #[derive(Debug)]
@@ -120,46 +118,39 @@ impl Map {
 
     fn find_potential_gears(&mut self) {
         let re = Regex::new(r"(\*)").unwrap();
-        
+
         for (row, line) in self.map.lines().enumerate() {
-            for captures in re.captures_iter(line) { 
+            for captures in re.captures_iter(line) {
                 if let Some(Some(capture)) = captures.iter().next() {
                     let position = capture.start();
-                    self.potential_gears.push(PotentialGear { 
-                        row,
-                        position,
-                    });
-                    
+                    self.potential_gears.push(PotentialGear { row, position });
                 }
             }
         }
-        
     }
 
     fn is_gear(&self, gear: &PotentialGear) -> Option<Vec<&Number>> {
         let mut connected_gears = vec![];
-        
+
         for number in &self.potential_parts {
-            
-            if (gear.row > 0 && gear.row - 1 == number.row) 
+            if (gear.row > 0 && gear.row - 1 == number.row)
                 || gear.row == number.row
-                || gear.row + 1 == number.row {
+                || gear.row + 1 == number.row
+            {
+                let start = if number.start == 0 {
+                    0
+                } else {
+                    number.start - 1
+                };
 
-                    let start = if number.start == 0 {
-                        0
-                    } else {
-                       number.start -1
-                    };
+                let end = number.end + 1;
 
-                    let end = number.end + 1;
+                let range = start..end;
 
-                    let range = start..end;
-
-                    if range.contains(&gear.position)  {
-                        connected_gears.push(number);
-                    }
-
+                if range.contains(&gear.position) {
+                    connected_gears.push(number);
                 }
+            }
         }
 
         assert!(!connected_gears.len() > 2);
@@ -170,21 +161,18 @@ impl Map {
         }
     }
 
-
     fn sum_gear_ratio(&self) -> u32 {
         let mut sum = 0;
 
         for gear in &self.potential_gears {
             if let Some(gear_numbers) = self.is_gear(gear) {
-                let ratio = gear_numbers[0].value * gear_numbers[1].value;  // safe because is_gear will alway return Option<Vec<Number>> with 2 Numbers!
+                let ratio = gear_numbers[0].value * gear_numbers[1].value; // safe because is_gear will alway return Option<Vec<Number>> with 2 Numbers!
                 sum += ratio;
             }
         }
 
         sum
     }
-
-
 }
 
 #[cfg(test)]

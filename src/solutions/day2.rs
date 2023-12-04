@@ -26,7 +26,6 @@ struct Games {
 }
 
 impl Games {
-
     fn new_from_input_regex_parser(input: &str) -> Self {
         let mut games = vec![];
         let re_id = Regex::new(r"(?<id>\d+):").unwrap();
@@ -124,7 +123,6 @@ struct GameSet {
 }
 
 impl GameSet {
-    
     fn new_empty() -> Self {
         GameSet {
             red: 0,
@@ -152,7 +150,6 @@ impl GameSet {
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     #[test]
     fn day_2_regex_patterns() {
