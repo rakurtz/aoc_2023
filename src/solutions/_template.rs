@@ -6,8 +6,8 @@ pub fn run() {
     // read file to string
     let input = read_file(DAY).expect("Couldn't read file");
     
-    let result_pt1 = "";
-    let result_pt2 = "";
+    let result_pt1 = "not yet implemented";
+    let result_pt2 = "not yet implemented";
     println!("Day {}, part 1: {}", DAY, result_pt1);
     println!("Day {}, part 2: {}", DAY, result_pt2);
 }

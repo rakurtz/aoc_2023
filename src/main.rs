@@ -13,6 +13,7 @@ fn main() {
             Ok(2) => aoc_2023::solutions::day2::run(),
             Ok(3) => aoc_2023::solutions::day3::run(),
             Ok(4) => aoc_2023::solutions::day4::run(),
+            Ok(5) => aoc_2023::solutions::day5::run(),
 
             _ => println!("{}", USAGE),
         }
