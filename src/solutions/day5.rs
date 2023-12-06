@@ -1,4 +1,5 @@
 use super::super::read_file;
+use std::{thread, sync::Arc};
 
 const DAY: usize = 5; 
 
@@ -9,8 +10,8 @@ pub fn run() {
     let maps = Maps::new(&input);
 
     let result_pt1 = maps.nearest_location_in_seeds(&seeds.seeds);
-    // let result_pt2 = maps.nearest_location_in_seed_ranges_bruteforce(&seeds.seeds);
-    let result_pt2 = maps.nearest_location_in_seed_ranges_reverse(&seeds.seeds);
+    let result_pt2 = maps.nearest_location_in_seed_ranges_bruteforce(&seeds.seeds);
+    // let result_pt2 = maps.nearest_location_in_seed_ranges_reverse(&seeds.seeds);
 
     println!("Day {}, part 1: {}", DAY, result_pt1);
     println!("Day {}, part 2: {}", DAY, result_pt2);
@@ -66,7 +67,7 @@ impl MapRange {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Map {
     name: String,
     ranges: Vec<MapRange>
@@ -86,7 +87,7 @@ impl Map {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Maps {
     maps: Vec<Map>
 }
@@ -163,25 +164,38 @@ impl Maps {
 
     fn nearest_location_in_seed_ranges_bruteforce(&self, seeds: &Vec<usize>) -> usize {
 
-        // takes around 20 min on sinlge core ...
-
+        // takes around 30 min on sinlge core ...
+        // takes around 13 min with threads
+        
         let mut seed_iter = seeds.iter();
-        let mut location: Option<usize> = None;
-
+        
+        let mut pool = vec![];
+        let self_arc = Arc::new(self.clone());
+        
         for _ in 0..seeds.len()/2 {
             let seed = *seed_iter.next().unwrap();
             let range = *seed_iter.next().unwrap();
-
-            for i in 0..range {
-                let next_location = self.get_seed_location(seed+i);
-                location = match (location, next_location) {
-                    (Some(loc), next_loc) => Some(loc.min(next_loc)),
-                    (None, next_loc) => Some(next_loc),
-                };
-                
-            }
+            let self_arc_clone = self_arc.clone();
+            
+            pool.push(thread::spawn( move || {
+                let mut location: Option<usize> = None;
+                for i in 0..range {
+                    let next_location = self_arc_clone.get_seed_location(seed+i);
+                    location = match (location, next_location) {
+                        (Some(loc), next_loc) => Some(loc.min(next_loc)),
+                        (None, next_loc) => Some(next_loc),
+                    };
+                    
+                }
+                location.unwrap()
+            }));
         }
-        location.unwrap()
+        let mut results = vec![];
+        for handle in pool {
+            results.push(handle.join().unwrap());
+        }
+        *results.iter().min().unwrap()
+        
         
     }
 
