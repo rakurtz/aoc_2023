@@ -8,12 +8,11 @@ const DAY: usize = 6; // change
 pub fn run() {
     // read file to string
     let input = read_file(DAY).expect("Couldn't read file");
-    let mut races = Races::new(&input);
-    races.calculate_all_strategies();
+    let (races_part1, races_part2) = Races::new(&input);
     
-    let result_pt1 = races.multiply_all_winning_strategies();
-    
-    let result_pt2 = "not yet implemented";
+    let result_pt1 = races_part1.multiply_all_winning_strategies();
+    let result_pt2 = races_part2.multiply_all_winning_strategies();
+
     println!("Day {}, part 1: {}", DAY, result_pt1);
     println!("Day {}, part 2: {}", DAY, result_pt2);
 }
@@ -57,31 +56,51 @@ struct Races {
 }
 
 impl Races {
-    fn new(input: &str) -> Self {
+    fn new(input: &str) -> (Self, Self) {
+
+        // returns two readily calculated instances of Races: One for Part 1 and one for Part 2
+
         let re = Regex::new(r"(\d+)").unwrap();
+        
         let mut races = vec![];
         let mut times = vec![];
         let mut distances = vec![];
+
+        let mut time_pt2 = String::new();
+        let mut distance_pt2 = String::new();
 
         let mut lines = input.lines();
         for captures in re.captures_iter(lines.next().unwrap()) {
             if let Some(Some(capture)) = captures.iter().next() {
                 times.push(capture.as_str().parse::<usize>().unwrap());
+                time_pt2 = format!("{}{}", time_pt2, capture.as_str());
             }
         }
         for captures in re.captures_iter(lines.next().unwrap()) {
             if let Some(Some(capture)) = captures.iter().next() {
                 distances.push(capture.as_str().parse::<usize>().unwrap());
+                distance_pt2 = format!("{}{}", distance_pt2, capture.as_str());
             }
         }
+
 
         for (time, distance) in zip(times, distances) {
             races.push(Race::new(time, distance));
         }
 
-        Races {
-            races
-        }
+        let mut races_pt1 = Races {races};
+        let mut races_pt2 = Races {
+            races: vec![
+                    Race::new(
+                        time_pt2.parse::<usize>().unwrap(), 
+                        distance_pt2.parse::<usize>().unwrap()
+                    )
+                ]
+        };
+        races_pt1.calculate_all_strategies();
+        races_pt2.calculate_all_strategies();
+
+        (races_pt1, races_pt2)
     }
 
     fn calculate_all_strategies(&mut self) {
@@ -104,23 +123,21 @@ mod tests {
         let input = "Time:      7  15   30
 Distance:  9  40  200";
 
-        let mut races = Races::new(input);
-        races.calculate_all_strategies();
+        let (races_part1, races_part2) = Races::new(input);
 
-        // calculate winning for first race
-        let race1 = &races.races[0];
-        let race2 = &races.races[1];
         
-
+        // testing part 1
+        let race1 = &races_part1.races[0];
+        let race2 = &races_part1.races[1];
+        
         assert_eq!(race1.winning_strategies, [2, 3, 4, 5]);
-
         assert_eq!(race2.winning_strategies.iter().min(), Some(&4usize));
         assert_eq!(race2.winning_strategies.iter().max(), Some(&11usize));
+        assert_eq!(races_part1.multiply_all_winning_strategies(), 288);
 
-        assert_eq!(races.multiply_all_winning_strategies(), 288);
-
-        // part 2
-        assert_eq!(0, 0);
+        
+        // testing part 2
+        assert_eq!(races_part2.multiply_all_winning_strategies(), 71503);
     }
 }
 

@@ -67,6 +67,7 @@ impl MapRange {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct Map {
     name: String,
@@ -79,7 +80,8 @@ impl Map {
             .find(|range| range.is_mapped(number).is_some())
             .and_then(|r| r.is_mapped(number))    
     }
-
+    
+    #[allow(dead_code)]
     fn is_mapped_reverse(&self, number: usize) -> Option<usize> {
         self.ranges.iter().rev()
             .find(|range| range.is_mapped_reverse(number).is_some())
@@ -142,6 +144,7 @@ impl Maps {
         destination
     }
 
+    #[allow(dead_code)]
     fn get_seed_location_reverse(&self, location: usize) -> usize {
         let mut source = location;
         for map in self.maps.iter().rev() {
