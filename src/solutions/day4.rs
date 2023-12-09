@@ -10,10 +10,10 @@ pub fn run() {
     // let result_pt1 = calculate_p1(&input);
 
     let pile = Pile::new(&input);
-       
+
     let result_pt1 = pile.points_in_game();
     let result_pt2 = pile.cards_in_game();
-    
+
     println!("Day {}, part 1: {}", DAY, result_pt1);
     println!("Day {}, part 2: {}", DAY, result_pt2);
 }
@@ -46,14 +46,13 @@ struct Pile {
 
 impl Pile {
     pub fn new(input: &str) -> Self {
-
         let mut pile = vec![];
-        for n in 1..input.lines().count()+1 {
+        for n in 1..input.lines().count() + 1 {
             pile.push(Card::new(n))
         }
-        
+
         let mut pile = Pile { pile };
-        
+
         for line in input.lines() {
             pile.parse_card(line);
         }
@@ -81,14 +80,14 @@ impl Pile {
         total
     }
 
-    // internal methods following 
+    // internal methods following
 
-    fn add_copies_to_next_cards(&mut self, id: usize, matching_numbers: u32, ) {
+    fn add_copies_to_next_cards(&mut self, id: usize, matching_numbers: u32) {
         if let Some(card) = self.get_card(id) {
             let copies = card.copies;
-            
-            for n in id..(id+matching_numbers as usize) {
-                if let Some(next_card) = self.get_card(n+1) {
+
+            for n in id..(id + matching_numbers as usize) {
+                if let Some(next_card) = self.get_card(n + 1) {
                     next_card.add_copies(copies);
                 }
             }
@@ -96,37 +95,36 @@ impl Pile {
     }
 
     fn get_card(&mut self, id: usize) -> Option<&mut Card> {
-        
         self.pile.iter_mut().find(|card| card.id == id)
-        
+
         //// Clippy suggested to use the above instead of:
         //
         // for card in &mut self.pile {
         //     if card.id == id {
         //         return Some(card);
-        //     } 
+        //     }
         // }
         // None
     }
-     
 
     fn parse_card(&mut self, line: &str) {
         let mut line = line.split(':');
 
-        let id = line.next()
-                    .unwrap()
-                    .split(' ')
-                    .last()         // number is the last
-                    .unwrap()
-                    .parse::<usize>()
-                    .unwrap();
-                
+        let id = line
+            .next()
+            .unwrap()
+            .split(' ')
+            .last() // number is the last
+            .unwrap()
+            .parse::<usize>()
+            .unwrap();
+
         // seperate winning nummbers from owner's numbers
         let mut seperated_numbers = line.next().unwrap().split('|');
-    
+
         let winning = Pile::extract_numbers(seperated_numbers.next().unwrap());
         let owned = Pile::extract_numbers(seperated_numbers.next().unwrap());
-    
+
         let mut matching = 0;
         for n in owned {
             if winning.contains(&n) {
@@ -135,9 +133,7 @@ impl Pile {
         }
         self.get_card(id).unwrap().matching = matching;
         self.add_copies_to_next_cards(id, matching);
-
     }
-
 
     //
     // not really a method on Pile. Should this be organized differently?
@@ -145,7 +141,7 @@ impl Pile {
     fn extract_numbers(haystack: &str) -> Vec<u32> {
         let re = Regex::new(r"(\d+)").unwrap();
         let mut numbers = vec![];
-    
+
         for captures in re.captures_iter(haystack) {
             if let Some(Some(capture)) = captures.iter().next() {
                 numbers.push(capture.as_str().parse::<u32>().unwrap());
@@ -153,15 +149,7 @@ impl Pile {
         }
         numbers
     }
-
-
 }
-
-
-
-
-
-
 
 #[cfg(test)]
 mod tests {
@@ -177,10 +165,10 @@ Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
 Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
 
         // part 1
-        
+
         // part 2
         let pile = Pile::new(input);
-        
+
         assert_eq!(13, pile.points_in_game());
         assert_eq!(30, pile.cards_in_game());
     }

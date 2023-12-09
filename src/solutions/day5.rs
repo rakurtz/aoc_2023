@@ -1,7 +1,7 @@
 use super::super::read_file;
-use std::{thread, sync::Arc};
+use std::{sync::Arc, thread};
 
-const DAY: usize = 5; 
+const DAY: usize = 5;
 
 pub fn run() {
     // read file to string
@@ -19,7 +19,7 @@ pub fn run() {
 
 #[derive(Debug)]
 struct Seeds {
-    seeds: Vec<usize>
+    seeds: Vec<usize>,
 }
 
 impl Seeds {
@@ -27,27 +27,26 @@ impl Seeds {
         let mut seeds = vec![];
 
         for number in input.lines().next().unwrap().split(' ').skip(1) {
-            seeds.push(number.parse::<usize>().unwrap());    
+            seeds.push(number.parse::<usize>().unwrap());
         }
-        Seeds {seeds}
+        Seeds { seeds }
     }
- 
-    
 }
-
-
-
 
 #[derive(Clone, Copy, Debug)]
 struct MapRange {
     destination: usize,
     source: usize,
-    range: usize
+    range: usize,
 }
 
 impl MapRange {
     fn zero() -> Self {
-        MapRange { destination: 0, source: 0, range: 0 }
+        MapRange {
+            destination: 0,
+            source: 0,
+            range: 0,
+        }
     }
 
     fn is_mapped(&self, number: usize) -> Option<usize> {
@@ -61,9 +60,9 @@ impl MapRange {
     fn is_mapped_reverse(&self, destination: usize) -> Option<usize> {
         if destination >= self.destination && destination - self.destination < self.range {
             Some(self.source + destination - self.destination)
-         } else {
+        } else {
             None
-         }
+        }
     }
 }
 
@@ -71,27 +70,30 @@ impl MapRange {
 #[derive(Debug, Clone)]
 struct Map {
     name: String,
-    ranges: Vec<MapRange>
+    ranges: Vec<MapRange>,
 }
 
 impl Map {
     fn is_mapped(&self, number: usize) -> Option<usize> {
-        self.ranges.iter()
+        self.ranges
+            .iter()
             .find(|range| range.is_mapped(number).is_some())
-            .and_then(|r| r.is_mapped(number))    
+            .and_then(|r| r.is_mapped(number))
     }
-    
+
     #[allow(dead_code)]
     fn is_mapped_reverse(&self, number: usize) -> Option<usize> {
-        self.ranges.iter().rev()
+        self.ranges
+            .iter()
+            .rev()
             .find(|range| range.is_mapped_reverse(number).is_some())
-            .and_then(|r| r.is_mapped_reverse(number))    
+            .and_then(|r| r.is_mapped_reverse(number))
     }
 }
 
 #[derive(Debug, Clone)]
 struct Maps {
-    maps: Vec<Map>
+    maps: Vec<Map>,
 }
 
 impl Maps {
@@ -111,8 +113,12 @@ impl Maps {
                 continue;
             }
             if line.is_empty() {
-                if !name.is_empty() {   // first empty line after "seeds" is causing an empty map in maps-vec otherwise
-                    maps.push(Map {name: name.clone(), ranges: ranges.clone()});
+                if !name.is_empty() {
+                    // first empty line after "seeds" is causing an empty map in maps-vec otherwise
+                    maps.push(Map {
+                        name: name.clone(),
+                        ranges: ranges.clone(),
+                    });
                     name.clear();
                     ranges.clear();
                 }
@@ -128,10 +134,13 @@ impl Maps {
         }
 
         // and pushing the last map to the vec since input ends without empty line
-        maps.push(Map {name: name.clone(), ranges: ranges.clone()});
+        maps.push(Map {
+            name: name.clone(),
+            ranges: ranges.clone(),
+        });
 
-        Maps {maps}
-    }    
+        Maps { maps }
+    }
 
     fn get_seed_location(&self, seed: usize) -> usize {
         let mut destination = seed;
@@ -139,7 +148,6 @@ impl Maps {
             if let Some(next_destinaton) = map.is_mapped(destination) {
                 destination = next_destinaton;
             }
-        
         }
         destination
     }
@@ -151,9 +159,8 @@ impl Maps {
             if let Some(next_source) = map.is_mapped_reverse(source) {
                 source = next_source;
             }
-        
         }
-        
+
         source
     }
 
@@ -166,29 +173,27 @@ impl Maps {
     }
 
     fn nearest_location_in_seed_ranges_bruteforce(&self, seeds: &Vec<usize>) -> usize {
-
         // takes around 30 min on sinlge core ...
         // takes around 13 min with threads
-        
+
         let mut seed_iter = seeds.iter();
-        
+
         let mut pool = vec![];
         let self_arc = Arc::new(self.clone());
-        
-        for _ in 0..seeds.len()/2 {
+
+        for _ in 0..seeds.len() / 2 {
             let seed = *seed_iter.next().unwrap();
             let range = *seed_iter.next().unwrap();
             let self_arc_clone = self_arc.clone();
-            
-            pool.push(thread::spawn( move || {
+
+            pool.push(thread::spawn(move || {
                 let mut location: Option<usize> = None;
                 for i in 0..range {
-                    let next_location = self_arc_clone.get_seed_location(seed+i);
+                    let next_location = self_arc_clone.get_seed_location(seed + i);
                     location = match (location, next_location) {
                         (Some(loc), next_loc) => Some(loc.min(next_loc)),
                         (None, next_loc) => Some(next_loc),
                     };
-                    
                 }
                 location.unwrap()
             }));
@@ -198,40 +203,33 @@ impl Maps {
             results.push(handle.join().unwrap());
         }
         *results.iter().min().unwrap()
-        
-        
     }
 
     fn nearest_location_in_seed_ranges_reverse(&self, seeds: &Vec<usize>) -> usize {
-
         // not checking all seeds but checking all locations until reverse lookup returns location in ranges
         // this implementation needs around 20 sec. But seams to have a bug. We miss the correct result by 4! (returns: 108956231)
 
         let mut ranges: Vec<(usize, usize)> = vec![];
         let mut seed_iter = seeds.iter();
-        for _ in 0..seeds.len()/2 {
+        for _ in 0..seeds.len() / 2 {
             let seed = *seed_iter.next().unwrap();
             let range = *seed_iter.next().unwrap();
 
-            ranges.push((seed, seed+range-1));
+            ranges.push((seed, seed + range - 1));
         }
-
 
         let mut potential_location = 0;
         loop {
             let potential_seed = self.get_seed_location_reverse(potential_location);
             for range in &ranges {
                 if potential_seed >= range.0 && potential_seed <= range.1 {
-            
                     return potential_location;
                 }
 
                 potential_location += 1;
             }
         }
-        
     }
-
 }
 
 #[cfg(test)]
@@ -290,19 +288,23 @@ humidity-to-location map:
 
         assert_eq!(Some(99), maps.maps[0].is_mapped_reverse(51));
         assert_eq!(None, maps.maps[0].is_mapped_reverse(100));
-        
+
         assert_eq!(82, maps.get_seed_location(79));
         assert_eq!(43, maps.get_seed_location(14));
         assert_eq!(86, maps.get_seed_location(55));
         assert_eq!(35, maps.get_seed_location(13));
 
-
         assert_eq!(35, maps.nearest_location_in_seeds(&seeds.seeds));
 
-        assert_eq!(46, maps.nearest_location_in_seed_ranges_bruteforce(&seeds.seeds));
-        assert_eq!(46, maps.nearest_location_in_seed_ranges_reverse(&seeds.seeds));
+        assert_eq!(
+            46,
+            maps.nearest_location_in_seed_ranges_bruteforce(&seeds.seeds)
+        );
+        assert_eq!(
+            46,
+            maps.nearest_location_in_seed_ranges_reverse(&seeds.seeds)
+        );
 
-        
         // part 1
         assert_eq!(0, 0);
 
@@ -310,4 +312,3 @@ humidity-to-location map:
         assert_eq!(0, 0);
     }
 }
-
