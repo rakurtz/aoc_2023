@@ -21,8 +21,7 @@ mod tests {
 
     #[test]
     fn test_day_0() {
-        let input = ""
-            .to_string();
+        let input = "";
 
         
         // part 1
