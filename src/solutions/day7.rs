@@ -111,18 +111,21 @@ impl Hand {
 
     fn determine_hand_type(&mut self) {
         let mut hash_map = HashMap::new();
+
+        // building a hash_map to get Cards and their amounts
         for card in &self.hand {
             *hash_map.entry(card).or_insert(0) += 1;
         }
 
+        // logic to determine HandType by len of above hash_map and product of the amount of cards
         self.hand_type = match hash_map.values().product() {
-            _ if hash_map.len() == 1 => HandType::Five,
+            1 if hash_map.len() == 1 => HandType::Five,
             4 if hash_map.len() == 2 => HandType::Four,
-            6 if hash_map.len() == 2 => HandType::FullHouse,
-            3 if hash_map.len() == 3 => HandType::Three,
+            6                        => HandType::FullHouse,
+            3                        => HandType::Three,
             4 if hash_map.len() == 3 => HandType::TwoPair,
-            2 if hash_map.len() == 4 => HandType::OnePair,
-            1 => HandType::HighCard,
+            2                        => HandType::OnePair,
+            1 if hash_map.len() == 5 => HandType::HighCard,
             _ => panic!("Could not parse HandType of Hand {:?}", self.hand),
         }
     }
