@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use regex::Regex;
+use rayon::prelude::*;
+
 use super::super::read_file;
 
 
@@ -12,7 +14,7 @@ pub fn run() {
     let nodes = Nodes::new_from_input(&input);
     let result_pt1 = nodes.navigate();
 
-    let result_pt2 = "not yet implemented";
+    let result_pt2 = nodes.navigate_simultaniously_rayon_bruteforce();
     
     println!("Day {}, part 1: {}", DAY, result_pt1);
     println!("Day {}, part 2: {}", DAY, result_pt2);
@@ -114,14 +116,54 @@ impl Nodes {
         let mut direction_iterator = self.iter();
 
         let mut next_node = Node {id: "AAA".to_string()};
-        while let Some(node) = self.next_node(&next_node, &direction_iterator.next().unwrap()) {
+        loop {
+            let node = self.next_node(&next_node, &direction_iterator.next().unwrap());
+            if node.id == "ZZZ" {
+                break;
+            } 
             next_node = node;
             counter += 1;
         }
         counter
     }
 
-    fn next_node(&self, node: &Node, direction: &Direction) -> Option<Node> {
+    fn navigate_simultaniously_rayon_bruteforce(&self) -> usize {
+
+        // could not get the result after 5:40 h single_core_äquivalent_CPUTIME
+
+        let mut counter = 1usize;
+        let mut direction_iterator = self.iter();
+
+        let mut starting_nodes = vec![];
+        for (k, _) in self.nodes.iter() {
+            if k.id.chars().collect::<Vec<char>>()[2] == 'A' {
+                starting_nodes.push(k.clone());
+            }
+        }
+        
+        let mut next_nodes = starting_nodes.clone();
+        'outer: loop {
+            let mut _next_nodes = vec![];
+            
+            let direction = direction_iterator.next().unwrap();
+            // for node in &next_nodes {
+            //     _next_nodes.push(self.next_node(node, &direction));
+            // }
+
+            _next_nodes = next_nodes.par_iter().map(|node| self.next_node(node, &direction)).collect();
+
+            if _next_nodes.iter().all(|node| node.id.chars().collect::<Vec<char>>()[2] == 'Z') {
+                break 'outer;
+            } else {
+                next_nodes = _next_nodes;
+                counter += 1;
+            }
+        }
+        counter
+
+    }
+
+    fn next_node(&self, node: &Node, direction: &Direction) -> Node {
         
         // using the endless direction iterator via self.iter().next()
         let next_node = match direction {
@@ -129,11 +171,7 @@ impl Nodes {
             Direction::Right => self.nodes.get(node).unwrap().1.clone(),
         };
 
-        if next_node.id != "ZZZ" {
-            Some(next_node)
-        } else {
-            None
-        }
+        next_node
     }
 
 
@@ -163,15 +201,31 @@ AAA = (BBB, BBB)
 BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ)";
 
+        let input3 = "LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)"; 
+
         let nodes = Nodes::new_from_input(input);
-        
         
         // part 1
         assert_eq!(2, nodes.navigate());
 
         let nodes = Nodes::new_from_input(input2);
-        // part 2
         assert_eq!(6, nodes.navigate());
+        
+        // part 2
+        let nodes = Nodes::new_from_input(input3);
+        assert_eq!(6, nodes.navigate_simultaniously_rayon_bruteforce());
+
+
+
     }
 }
 
