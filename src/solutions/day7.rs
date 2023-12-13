@@ -121,10 +121,10 @@ impl Hand {
         self.hand_type = match hash_map.values().product() {
             1 if hash_map.len() == 1 => HandType::Five,
             4 if hash_map.len() == 2 => HandType::Four,
-            6                        => HandType::FullHouse,
-            3                        => HandType::Three,
+            6 => HandType::FullHouse,
+            3 => HandType::Three,
             4 if hash_map.len() == 3 => HandType::TwoPair,
-            2                        => HandType::OnePair,
+            2 => HandType::OnePair,
             1 if hash_map.len() == 5 => HandType::HighCard,
             _ => panic!("Could not parse HandType of Hand {:?}", self.hand),
         }
