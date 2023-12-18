@@ -18,6 +18,7 @@ fn main() {
             Ok(7) => aoc_2023::solutions::day7::run(),
             Ok(8) => aoc_2023::solutions::day8::run(),
             Ok(9) => aoc_2023::solutions::day9::run(),
+            Ok(10) => aoc_2023::solutions::day10::run(),
 
             _ => println!("{}", USAGE),
         }
